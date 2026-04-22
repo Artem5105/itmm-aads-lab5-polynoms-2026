@@ -11,13 +11,14 @@ using namespace std;
 
 TPolynom::TPolynom() {};
 
+//степень - 1 цифра
 int packPowers(int x, int y, int z) {
-	return x * 10000 + y * 100 + z;
+	return x * 100 + y * 10 + z;
 }
 
-int getPowerX(int powers) { return powers / 10000; }
-int getPowerY(int powers) { return (powers / 100) % 100; }
-int getPowerZ(int powers) { return powers % 100; }
+int getPowerX(int powers) { return powers / 100; }
+int getPowerY(int powers) { return (powers / 10) % 10; }
+int getPowerZ(int powers) { return powers % 10; }
 
 bool TPolynom::IsCorrect() const {
 	if (data.empty()) return true;
@@ -31,7 +32,8 @@ bool TPolynom::IsCorrect() const {
 		int px = getPowerX(term.powers);
 		int py = getPowerY(term.powers);
 		int pz = getPowerZ(term.powers);
-		if (px < 0 || py < 0 || pz < 0) return false;
+		
+		if (px < 0 || px > 9 || py < 0 || py > 9 || pz < 0 || pz > 9) return false;
 
 		if (find(powers.begin(), powers.end(), term.powers) != powers.end()) return false;
 
@@ -40,7 +42,7 @@ bool TPolynom::IsCorrect() const {
 	return true;
 }
 
-void TPolynom::sort_polynom() {
+void TPolynom::CollectPolynom() {
 	if (data.empty()) return;
 
 	data.sort([](const TTerm& a, const TTerm& b) { return a.powers > b.powers; });
@@ -61,7 +63,7 @@ void TPolynom::sort_polynom() {
 }
 
 //Было принято решение вынести парсинг в отдельную ф-ию, тк SetPolynom и Адд используют это.. (дабы не писать два раза)
-static TTerm parsing(const string& monom) {
+TTerm TPolynom::parsing(const string& monom) {
 	string s;
 	for (char c : monom) if (!isspace(c)) s += c;
 	if (s.empty()) throw out_of_range("Empty monom");
@@ -94,14 +96,8 @@ static TTerm parsing(const string& monom) {
 	return term;
 }
 
-void TPolynom::SetPolynom(const std::string& polynom) {
-	data.clear();
-	string s;
-	for (char c : polynom) {
-		if (!isspace(c)) s += c;
-	}
-	if (s.empty()) throw out_of_range("Empty string");
-
+list<TTerm> TPolynom::ParsePolynomString(const string& s){
+	list<TTerm> result;
 	size_t i = 0;
 	bool first = true;
 	while (i < s.length()) {
@@ -126,9 +122,21 @@ void TPolynom::SetPolynom(const std::string& polynom) {
 		string monomStr = s.substr(start, i - start);
 		TTerm term = parsing(monomStr);
 		term.coeff *= sign;
-		data.push_back(term);
+		result.push_back(term);
 	}
-	sort_polynom();
+	return result;
+}
+
+void TPolynom::SetPolynom(const std::string& polynom) {
+	data.clear();
+	string s;
+	for (char c : polynom) {
+		if (!isspace(c)) s += c;
+	}
+	if (s.empty()) return;
+
+	data = ParsePolynomString(s);
+	CollectPolynom();
 }
 
 TPolynom TPolynom::operator+(const TPolynom &polynom) const {
@@ -136,7 +144,7 @@ TPolynom TPolynom::operator+(const TPolynom &polynom) const {
 
 	TPolynom result = *this;
 	result.data.insert(result.data.end(), polynom.data.begin(), polynom.data.end());
-	result.sort_polynom();
+	result.CollectPolynom();
 	return result;
 }
 
@@ -149,7 +157,7 @@ TPolynom TPolynom::operator-(const TPolynom &polynom) const {
 		tmp.coeff = -tmp.coeff;
 		result.data.push_back(tmp);
 	}
-	result.sort_polynom();
+	result.CollectPolynom();
 	return result;
 }
 
@@ -162,11 +170,16 @@ TPolynom TPolynom::operator*(const TPolynom &polynom) const {
 			int px = getPowerX(a.powers) + getPowerX(b.powers);
 			int py = getPowerY(a.powers) + getPowerY(b.powers);
 			int pz = getPowerZ(a.powers) + getPowerZ(b.powers);
+
+			if (px > 9 || py > 9 || pz > 9) {
+				throw out_of_range("Degree greater than 9");
+			}
+
 			term.powers = packPowers(px, py, pz);
 			result.data.push_back(term);
 		}
 	}
-	result.sort_polynom();
+	result.CollectPolynom();
 	return result;
 }
 
@@ -180,11 +193,33 @@ TPolynom TPolynom::operator*(double coeff) const {
 	return result;
 }
 
+TPolynom operator*(double coeff, const TPolynom& p) {
+	return p * coeff;
+}
+
+bool TPolynom::operator==(const TPolynom& other) const {
+	if (data.size() != other.data.size()) return false;
+
+	auto iter1 = data.begin();
+	auto iter2 = other.data.begin();
+	while (iter1 != data.end()) {
+		if (iter1->coeff != iter2->coeff) return false;
+		if (iter1->powers != iter2->powers) return false;
+		++iter1;
+		++iter2;
+	}
+	return true;
+}
+
+bool TPolynom::operator!=(const TPolynom& other) const {
+	return !(*this == other);
+}
+
 void TPolynom::Add(const std::string& monom) {
-	if (monom.empty()) throw out_of_range("Empty monom");
+	if (monom.empty()) return;
 	TTerm term = parsing(monom);
 	data.push_back(term);
-	sort_polynom();
+	CollectPolynom();
 }
 
 void TPolynom::Delete(size_t pos) {

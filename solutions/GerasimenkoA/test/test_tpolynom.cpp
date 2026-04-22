@@ -9,10 +9,10 @@ TEST(TPolynom, can_set_polynom) {
     ASSERT_NO_THROW(p.SetPolynom("3x^2y^4 + 4.5yz^2"));
 }
 
-TEST(TPolynom, cant_set_empty_polynom)
+TEST(TPolynom, can_set_empty_polynom)
 {
     TPolynom p;
-    ASSERT_ANY_THROW(p.SetPolynom(""));
+    ASSERT_NO_THROW(p.SetPolynom(""));
 }
 
 TEST(TPolynom, cant_set_polynom_err) {
@@ -72,9 +72,46 @@ TEST(TPolynom, multiply_polynom_by_double) {
     EXPECT_EQ(val, 10);
 }
 
-TEST(TPolynom, cant_add_empty_monom) {
+TEST(TPolynom, multiply_double_by_polynom) {
+    TPolynom p1;
+    p1.SetPolynom("2x + 3");
+    TPolynom p2 = 2.0 * p1;
+    double val = p2.Calculate(1.0, 0.0, 0.0);
+    EXPECT_EQ(val, 10);
+}
+
+TEST(TPolynom, equal_polynoms_are_equal) {
+    TPolynom p1, p2;
+    p1.SetPolynom("3x^2y^4 + 4.5yz^2");
+    p2.SetPolynom("3x^2y^4 + 4.5yz^2");
+    EXPECT_TRUE(p1 == p2);
+    EXPECT_FALSE(p1 != p2);
+}
+
+TEST(TPolynom, different_polynoms_are_not_equal) {
+    TPolynom p1, p2;
+    p1.SetPolynom("3x^2y^4 + 4.5yz^2");
+    p2.SetPolynom("2x^2y^4 + 4.5yz^2");
+    EXPECT_FALSE(p1 == p2);
+    EXPECT_TRUE(p1 != p2);
+}
+
+TEST(TPolynom, empty_polynoms_are_equal) {
+    TPolynom p1, p2;
+    EXPECT_TRUE(p1 == p2);
+    EXPECT_FALSE(p1 != p2);
+}
+
+TEST(TPolynom, zero_polynoms_are_equal) {
+    TPolynom p1, p2;
+    p1.SetPolynom("");
+    p2.SetPolynom("0");
+    EXPECT_TRUE(p1 == p2);
+}
+
+TEST(TPolynom, can_add_empty_monom) {
     TPolynom p;
-    ASSERT_ANY_THROW(p.Add(""));
+    ASSERT_NO_THROW(p.Add(""));
 }
 
 TEST(TPolynom, can_delete_monom_by_position) {
